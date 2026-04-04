@@ -56,6 +56,42 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// image upload
+const upload = require('../upload');
+const supabase = require('../supabaseClient');
+
+router.post('/upload', upload.single('image'), async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileName = `task-${Date.now()}`;
+
+    const { data, error } = await supabase.storage
+      .from('task-images')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from('task-images')
+      .getPublicUrl(fileName);
+
+    res.json({
+      message: 'Uploaded',
+      url: publicUrl.publicUrl,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 //delete task
 router.delete('/:id', async (req, res) => {
   try {
